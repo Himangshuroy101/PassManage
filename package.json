@@ -1,6 +1,7 @@
 {
   "name": "passmanage",
   "version": "1.0.0",
+  "description": "Ultra-secure, 100% offline, zero-knowledge mobile password manager built with React Native and Expo.",
   "main": "index.ts",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",

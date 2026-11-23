@@ -217,7 +217,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         // Brief delay so user experiences the cinematic splash reveal
-        await new Promise(resolve => setTimeout(resolve, 1400));
+        await new Promise(resolve => setTimeout(resolve, 1850));
       } finally {
         setIsAuthLoading(false);
       }

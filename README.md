@@ -38,6 +38,12 @@
     - 🔄 **Reused Passwords** across multiple accounts
   - One-tap filter chips to isolate vulnerable credentials immediately.
 
+- ⚡ **Native Android Auto-Fill (`onFillRequest`) & Auto-Save (`onSaveRequest`)**
+  - Fully integrated with the **Android Autofill Framework** (`AutofillService` API 26+).
+  - **Auto-Fill Request**: Detects login inputs in any third-party app or mobile browser (Chrome, Netflix, Instagram, etc.) and presents matching credentials as inline keyboard chips or dropdown suggestions.
+  - **Auto-Save Request**: Automatically prompts the user with the native Android dialog (*"Save password to PassManage?"*) when registering or logging in anywhere, securely storing new credentials into the local vault.
+  - Fast offline matching against app package names and web domains.
+
 - 💬 **WhatsApp Credential & Vault Sharing**
   - **Individual Share**: Export any credential directly to WhatsApp with pre-formatted Markdown and security confirmation.
   - **Vault Backup Digest**: Export a formatted digest of all stored accounts to your personal WhatsApp chat or trusted contact.

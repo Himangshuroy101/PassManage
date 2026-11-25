@@ -15,6 +15,14 @@ import {
   computeVaultStats,
   clearAllSecureCredentials,
 } from '../services/security';
+import {
+  checkAutofillStatus,
+  requestEnableAutofill,
+  syncVaultToAutofill,
+  fetchPendingAutoSavedItems,
+  clearPendingAutoSavedItems,
+  AutofillStatus,
+} from '../services/autofillService';
 
 const VAULT_STORAGE_KEY = 'pm_encrypted_vault_data';
 const ONBOARDING_STORAGE_KEY = 'pm_onboarding_completed';
@@ -156,6 +164,12 @@ interface VaultContextType {
   loadDemoData: () => Promise<void>;
   clearVaultData: () => Promise<void>;
   resetAllAppData: () => Promise<void>;
+
+  // Android System Autofill & Auto-Save
+  autofillStatus: AutofillStatus;
+  checkAutofill: () => Promise<void>;
+  enableAutofill: () => Promise<boolean>;
+  syncAutofill: () => Promise<boolean>;
 }
 
 const VaultContext = createContext<VaultContextType | undefined>(undefined);
@@ -185,6 +199,67 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [isAddEditModalVisible, setIsAddEditModalVisible] = useState<boolean>(false);
   const [itemToEdit, setItemToEdit] = useState<VaultItem | null>(null);
   const [isGeneratorModalVisible, setIsGeneratorModalVisible] = useState<boolean>(false);
+  const [autofillStatus, setAutofillStatus] = useState<AutofillStatus>({
+    isSupported: false,
+    isEnabled: false,
+  });
+
+  const checkAutofill = async () => {
+    try {
+      const status = await checkAutofillStatus();
+      setAutofillStatus(status);
+    } catch (e) {
+      console.error('Error checking autofill:', e);
+    }
+  };
+
+  const enableAutofill = async (): Promise<boolean> => {
+    const success = await requestEnableAutofill();
+    setTimeout(() => {
+      checkAutofill();
+    }, 1200);
+    return success;
+  };
+
+  const syncAutofill = async (): Promise<boolean> => {
+    const res = await syncVaultToAutofill(items);
+    await checkAndMergePendingSavedItems();
+    await checkAutofill();
+    return res;
+  };
+
+  const checkAndMergePendingSavedItems = async () => {
+    try {
+      const pending = await fetchPendingAutoSavedItems();
+      if (pending && pending.length > 0) {
+        setItems(currentItems => {
+          let updated = [...currentItems];
+          for (const item of pending) {
+            const index = updated.findIndex(
+              i =>
+                i.username.toLowerCase() === item.username.toLowerCase() &&
+                (i.appName.toLowerCase() === item.appName.toLowerCase() ||
+                  i.siteUrl.toLowerCase() === item.siteUrl.toLowerCase())
+            );
+            if (index >= 0) {
+              updated[index] = {
+                ...updated[index],
+                password: item.password,
+                updatedAt: Date.now(),
+              };
+            } else {
+              updated = [item, ...updated];
+            }
+          }
+          saveVaultData(updated);
+          return updated;
+        });
+        await clearPendingAutoSavedItems();
+      }
+    } catch (error) {
+      console.error('Error merging auto-saved items:', error);
+    }
+  };
 
   // Initialize auth state
   useEffect(() => {
@@ -209,6 +284,9 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const bioPref = await isBiometricsPrefEnabled();
         setBiometricsEnabled(bioPref);
 
+        // Check Android system autofill registration
+        await checkAutofill();
+
         // Lock if PIN exists, otherwise allow initial PIN setup
         if (pinExists) {
           setIsLocked(true);
@@ -231,6 +309,10 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (nextState.match(/inactive|background/)) {
         backgroundTimestampRef.current = Date.now();
       } else if (nextState === 'active') {
+        checkAutofill();
+        if (!isLocked) {
+          checkAndMergePendingSavedItems();
+        }
         if (
           backgroundTimestampRef.current &&
           Date.now() - backgroundTimestampRef.current > 30000 &&
@@ -245,7 +327,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => {
       subscription.remove();
     };
-  }, [isPinSet]);
+  }, [isPinSet, isLocked]);
 
   // Update stats whenever items change
   useEffect(() => {
@@ -261,6 +343,8 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         const decrypted = await decryptVaultData(encryptedData);
         if (decrypted) {
           setItems(decrypted);
+          await syncVaultToAutofill(decrypted);
+          await checkAndMergePendingSavedItems();
           return;
         }
       }
@@ -275,9 +359,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Populate realistic sample demo items for testing
   const loadDemoData = async () => {
     try {
-      setItems(DEMO_SEED_ITEMS);
-      const encrypted = await encryptVaultData(DEMO_SEED_ITEMS);
-      await AsyncStorage.setItem(VAULT_STORAGE_KEY, encrypted);
+      await saveVaultData(DEMO_SEED_ITEMS);
     } catch (error) {
       console.error('Error loading demo data:', error);
     }
@@ -286,9 +368,7 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Clear all vault credentials
   const clearVaultData = async () => {
     try {
-      setItems([]);
-      const encrypted = await encryptVaultData([]);
-      await AsyncStorage.setItem(VAULT_STORAGE_KEY, encrypted);
+      await saveVaultData([]);
     } catch (error) {
       console.error('Error clearing vault data:', error);
     }
@@ -347,6 +427,8 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setItems(newItems);
       const encrypted = await encryptVaultData(newItems);
       await AsyncStorage.setItem(VAULT_STORAGE_KEY, encrypted);
+      // Sync native Android Autofill store
+      await syncVaultToAutofill(newItems);
     } catch (error) {
       console.error('Error saving vault data:', error);
     }
@@ -475,6 +557,10 @@ export const VaultProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         loadDemoData,
         clearVaultData,
         resetAllAppData,
+        autofillStatus,
+        checkAutofill,
+        enableAutofill,
+        syncAutofill,
       }}
     >
       {children}

@@ -31,10 +31,43 @@ export const SettingsScreen: React.FC = () => {
     loadDemoData,
     clearVaultData,
     resetAllAppData,
+    autofillStatus,
+    enableAutofill,
+    syncAutofill,
   } = useVault();
 
   const [autoLockTime, setAutoLockTime] = useState<'30s' | '1m' | '5m'>('30s');
   const [isChangePinVisible, setIsChangePinVisible] = useState<boolean>(false);
+  const [isSyncingAutofill, setIsSyncingAutofill] = useState<boolean>(false);
+
+  const handleEnableAutofill = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const res = await enableAutofill();
+    if (!res) {
+      Alert.alert(
+        'Android Autofill Settings',
+        'To choose PassManage as your default autofill service:\n\n1. Open your Android Settings > System > Languages & Input > Autofill service (or Settings > Passwords & Accounts).\n2. Select "PassManage".',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const handleManualSyncAutofill = async () => {
+    setIsSyncingAutofill(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await syncAutofill();
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(
+        'Autofill Engine Synced',
+        `${items.length} credential${items.length === 1 ? '' : 's'} synchronized with Android system autofill.\n\nReady for auto-fill and auto-save on Chrome, web browsers, and Android apps.`
+      );
+    } catch {
+      Alert.alert('Sync Notice', 'Failed to synchronize with native autofill engine.');
+    } finally {
+      setIsSyncingAutofill(false);
+    }
+  };
 
   const handleShareVaultWhatsApp = async () => {
     if (items.length === 0) {
@@ -188,6 +221,115 @@ export const SettingsScreen: React.FC = () => {
             </View>
             <Feather name="chevron-right" size={20} color={Colors.textMuted} />
           </TouchableOpacity>
+        </View>
+
+        {/* Android System Autofill & Auto-Save Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionHeader}>Android System Autofill</Text>
+            <View
+              style={[
+                styles.statusPill,
+                autofillStatus.isEnabled ? styles.statusPillActive : styles.statusPillInactive,
+              ]}
+            >
+              <Ionicons
+                name={autofillStatus.isEnabled ? 'checkmark-circle' : 'alert-circle'}
+                size={12}
+                color={autofillStatus.isEnabled ? '#059669' : '#D97706'}
+                style={{ marginRight: 4 }}
+              />
+              <Text
+                style={[
+                  styles.statusPillText,
+                  autofillStatus.isEnabled ? styles.statusPillTextActive : styles.statusPillTextInactive,
+                ]}
+              >
+                {autofillStatus.isEnabled ? 'Active Provider' : 'Not Configured'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Service Info Row */}
+          <View style={styles.settingRow}>
+            <View style={[styles.settingIconBox, { backgroundColor: '#ECFDF5' }]}>
+              <Ionicons name="sparkles" size={20} color={Colors.primary} />
+            </View>
+            <View style={styles.settingTextCol}>
+              <Text style={styles.settingTitle}>Auto-Fill & Auto-Save</Text>
+              <Text style={styles.settingDesc}>
+                {autofillStatus.isEnabled
+                  ? 'System service ready for input fields'
+                  : 'Tap below to select PassManage as provider'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Capabilities Banner */}
+          <View style={styles.autofillFeatureBox}>
+            <View style={styles.featureItemRow}>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>
+                <Text style={styles.featureBold}>Auto-Fill (onFillRequest):</Text> Instant dropdown suggestions in Chrome, Netflix, Instagram, etc.
+              </Text>
+            </View>
+            <View style={styles.featureItemRow}>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>
+                <Text style={styles.featureBold}>Auto-Save (onSaveRequest):</Text> Prompts "Save password to PassManage?" when signing in or registering anywhere.
+              </Text>
+            </View>
+            <View style={styles.featureItemRow}>
+              <View style={styles.featureDot} />
+              <Text style={styles.featureText}>
+                <Text style={styles.featureBold}>100% Zero-Knowledge:</Text> Completely offline on-device storage. No cloud tracking.
+              </Text>
+            </View>
+          </View>
+
+          {/* Action Buttons Row */}
+          <View style={styles.autofillActionRow}>
+            <TouchableOpacity
+              style={[
+                styles.autofillBtnPrimary,
+                autofillStatus.isEnabled && styles.autofillBtnConfigured,
+              ]}
+              onPress={handleEnableAutofill}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={autofillStatus.isEnabled ? 'settings-outline' : 'flash-outline'}
+                size={16}
+                color={autofillStatus.isEnabled ? Colors.primary : '#FFFFFF'}
+                style={{ marginRight: 6 }}
+              />
+              <Text
+                style={[
+                  styles.autofillBtnPrimaryText,
+                  autofillStatus.isEnabled && styles.autofillBtnConfiguredText,
+                ]}
+              >
+                {autofillStatus.isEnabled ? 'Autofill Settings' : 'Enable Autofill Service'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.autofillBtnSecondary}
+              onPress={handleManualSyncAutofill}
+              disabled={isSyncingAutofill}
+              activeOpacity={0.8}
+            >
+              <Feather
+                name="refresh-cw"
+                size={14}
+                color={Colors.primary}
+                style={{ marginRight: 5 }}
+              />
+              <Text style={styles.autofillBtnSecondaryText}>
+                {isSyncingAutofill ? 'Syncing...' : `Sync (${items.length})`}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Security Preferences */}
@@ -618,5 +760,113 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '700',
     fontSize: 15,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  statusPillActive: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  statusPillInactive: {
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statusPillTextActive: {
+    color: '#065F46',
+  },
+  statusPillTextInactive: {
+    color: '#B45309',
+  },
+  autofillFeatureBox: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    gap: 6,
+  },
+  featureItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  featureDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: Colors.accentMint,
+    marginTop: 6,
+    marginRight: 8,
+  },
+  featureText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+  },
+  featureBold: {
+    fontWeight: '700',
+    color: Colors.textDark,
+  },
+  autofillActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  autofillBtnPrimary: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  autofillBtnConfigured: {
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  autofillBtnPrimaryText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  autofillBtnConfiguredText: {
+    color: Colors.primary,
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  autofillBtnSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+  },
+  autofillBtnSecondaryText: {
+    color: Colors.primary,
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

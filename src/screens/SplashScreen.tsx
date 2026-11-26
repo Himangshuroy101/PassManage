@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -180,35 +180,11 @@ export const SplashScreen: React.FC = () => {
 
           {/* Luxury 3D Glassmorphic Shield Medallion */}
           <Animated.View style={[styles.emblemCard, animatedLogoStyle]}>
-            <LinearGradient
-              colors={['#FFFFFF', '#F0FDF4', '#D1FAE5']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cardGradient}
-            >
-              {/* Specular Glass Top Highlight */}
-              <View style={styles.specularHighlight} />
-
-              {/* Contoured Shield Emblem with Glowing Core */}
-              <View style={styles.shieldWrapper}>
-                <Feather name="shield" size={48} color={Colors.primary} />
-                <View style={styles.shieldCore}>
-                  <Ionicons name="key" size={17} color={Colors.accentMint} />
-                </View>
-              </View>
-
-              {/* Corner Floating Security Lock Badge */}
-              <View style={styles.lockBadge}>
-                <LinearGradient
-                  colors={['#0A3D2A', '#0D533A']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.lockBadgeGradient}
-                >
-                  <Feather name="lock" size={15} color="#34D399" />
-                </LinearGradient>
-              </View>
-            </LinearGradient>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="cover"
+            />
           </Animated.View>
         </View>
 
@@ -380,10 +356,16 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 24,
     elevation: 8,
     position: 'relative',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 32,
   },
   cardGradient: {
     width: '100%',

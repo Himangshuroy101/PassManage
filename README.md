@@ -1,15 +1,30 @@
-# 🛡️ PassManage — Zero-Knowledge Offline Password Manager
-
 <div align="center">
 
-![PassManage Banner](https://img.shields.io/badge/PassManage-Emerald%20Mint-10B981?style=for-the-badge&logo=shield&logoColor=white)
-![Expo](https://img.shields.io/badge/Expo_SDK_58-000020?style=for-the-badge&logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React_Native_0.88-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Encryption](https://img.shields.io/badge/AES--256--GCM-Hardware_KeyStore-0D533A?style=for-the-badge&logo=lock&logoColor=white)
+  <img src="assets/icon.png" alt="PassManage Logo" width="140" height="140" />
 
-**An ultra-secure, 100% offline, zero-knowledge mobile password manager built with React Native and Expo.**  
-*Your passwords stay strictly on your device. Zero servers. Zero tracking. Complete privacy.*
+  # PassManage
+
+  ### Zero-Knowledge Offline Password Manager & Vault
+
+  [![PassManage](https://img.shields.io/badge/PassManage-Emerald%20Mint-10B981?style=for-the-badge&logo=shield&logoColor=white)](#)
+  [![Expo SDK](https://img.shields.io/badge/Expo_SDK_58-000020?style=for-the-badge&logo=expo&logoColor=white)](#)
+  [![React Native](https://img.shields.io/badge/React_Native_0.88-61DAFB?style=for-the-badge&logo=react&logoColor=black)](#)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](#)
+  [![Encryption](https://img.shields.io/badge/AES--256--GCM-Hardware_KeyStore-0D533A?style=for-the-badge&logo=lock&logoColor=white)](#)
+  [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](#)
+
+  <p align="center">
+    <strong>An ultra-secure, 100% offline, zero-knowledge mobile password manager built with React Native and Expo.</strong><br>
+    <em>Your passwords stay strictly on your device. Zero servers. Zero tracking. Complete privacy.</em>
+  </p>
+
+  <p align="center">
+    <a href="#-highlights--key-features">Features</a> •
+    <a href="#-security-architecture">Security Architecture</a> •
+    <a href="#%EF%B8%8F-tech-stack">Tech Stack</a> •
+    <a href="#-project-structure">Project Structure</a> •
+    <a href="#-getting-started">Getting Started</a>
+  </p>
 
 </div>
 
@@ -145,7 +160,8 @@ PassManage/
 │   │   ├── VaultDetailSheet.tsx       # View credential details & WhatsApp share
 │   │   └── AddEditVaultSheet.tsx      # Add or edit credential sheet
 │   ├── services/
-│   │   └── security.ts                # AES-256 encryption, hashing & Watchtower logic
+│   │   ├── security.ts                # AES-256 encryption, hashing & Watchtower logic
+│   │   └── autofillService.ts         # Android native Auto-Fill & Auto-Save bridge
 │   └── theme/
 │       └── colors.ts                  # Palette A (Emerald Mint & Crisp White)
 ├── App.tsx                    # Root navigator & state router
